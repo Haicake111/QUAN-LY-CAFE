@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}Quản Trị — Café & Co.{% endblock %}
+
+{% block extra_css %}
+<style>
+  .admin-header {
+    background: linear-gradient(135deg, var(--cafe-espresso), #5a3a25);
+    color: white;
+    padding: 1.75rem 0 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .admin-header h2 {
+    font-family: 'Playfair Display', serif;
+    margin-bottom: 0.25rem;
+  }
+
+  /* ── Stats Cards ──────────────────────────── */
+  .stat-card {
+    background: white;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 2px 12px rgba(74,44,23,0.08);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .stat-icon.brown  { background: #fdf6ee; color: var(--cafe-brown); }
+  .stat-icon.green  { background: #e8f5e9; color: #2e7d32; }
+  .stat-icon.red    { background: #ffeee8; color: #c62828; }
+
+  /* ── Admin Table ──────────────────────────── */
+  .admin-table-wrapper {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 20px rgba(74,44,23,0.08);
+    overflow: hidden;
+  }
+
+  .admin-table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #f0e8e0;
+  }
+
+  .admin-table-header h5 {
+    font-family: 'Playfair Display', serif;
+    margin: 0;
+    color: var(--cafe-brown);
+  }
+
+  .table { margin: 0; }
+
+  .table thead th {
+    background: var(--cafe-foam);
+    color: var(--cafe-brown);
+    font-weight: 600;
+    font-size: 0.825rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border: none;
+    padding: 0.85rem 1rem;
+    white-space: nowrap;
+  }
+
+  .table tbody tr {
+    border-color: #faf4ee;
+    transition: background 0.15s;
+  }
+
+  .table tbody tr:hover { background: #fffaf6; }
+
+  .table td {
+    vertical-align: middle;
+    padding: 0.8rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .product-thumb {
+    width: 52px;
+    height: 52px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 2px solid var(--cafe-foam);
+  }
+
+  .product-name {
+    font-weight: 600;
+    color: var(--cafe-espresso);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .price-cell {
+    font-weight: 700;
+    color: var(--cafe-latte);
+    white-space: nowrap;
+  }
+
+  /* ── Empty State ──────────────────────────── */
+  .table-empty {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #bbb;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ADMIN HEADER -->
+<div class="admin-header">
+  <div class="container">
+    <h2><i class="bi bi-speedometer2 me-2"></i>Bảng Quản Trị</h2>
+    <p class="mb-0 opacity-75 small">Quản lý toàn bộ sản phẩm trong hệ thống</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- THỐNG KÊ NHANH -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4">
+      <div class="stat-card">
+        <div class="stat-icon brown"><i class="bi bi-box-seam"></i></div>
+        <div>
+          <div class="fw-bold fs-4">{{ products | length }}</div>
+          <div class="text-muted small">Tổng sản phẩm</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+        <div>
+          <div class="fw-bold fs-4 text-success">{{ products | selectattr('status') | list | length }}</div>
+          <div class="text-muted small">Còn hàng</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="bi bi-x-circle"></i></div>
+        <div>
+          <div class="fw-bold fs-4 text-danger">{{ products | rejectattr('status') | list | length }}</div>
+          <div class="text-muted small">Hết hàng</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE WRAPPER -->
+  <div class="admin-table-wrapper mb-5">
+
+    <div class="admin-table-header">
+      <h5><i class="bi bi-table me-2"></i>Danh Sách Sản Phẩm</h5>
+      <a href="{{ url_for('create_product') }}" class="btn btn-cafe btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>Thêm Sản Phẩm
+      </a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Ảnh</th>
+            <th>Tên Sản Phẩm</th>
+            <th>Danh Mục</th>
+            <th>Giá Bán</th>
+            <th>Trạng Thái</th>
+            <th>Ngày Tạo</th>
+            <th style="width:130px">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if products %}
+            {% for p in products %}
+            <tr>
+              <td class="text-muted small">{{ p.id }}</td>
+
+              <!-- Ảnh thu nhỏ -->
+              <td>
+                <img src="{{ p.image_url or 'https://via.placeholder.com/52?text=?' }}"
+                     alt="{{ p.name }}"
+                     class="product-thumb"
+                     onerror="this.src='https://via.placeholder.com/52?text=?'">
+              </td>
+
+              <!-- Tên -->
+              <td>
+                <div class="product-name" title="{{ p.name }}">{{ p.name }}</div>
+                {% if p.description %}
+                  <div class="text-muted small"
+                       style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap"
+                       title="{{ p.description }}">
+                    {{ p.description[:60] }}{% if p.description|length > 60 %}…{% endif %}
+                  </div>
+                {% endif %}
+              </td>
+
+              <!-- Danh mục -->
+              <td>
+                <span class="badge" style="background:var(--cafe-foam);color:var(--cafe-brown)">
+                  {{ p.category.name }}
+                </span>
+              </td>
+
+              <!-- Giá -->
+              <td class="price-cell">{{ "{:,.0f}".format(p.price) }}₫</td>
+
+              <!-- Trạng thái -->
+              <td>
+                {% if p.status %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">
+                    <i class="bi bi-check-circle me-1"></i>Còn hàng
+                  </span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                    <i class="bi bi-x-circle me-1"></i>Hết hàng
+                  </span>
+                {% endif %}
+              </td>
+
+              <!-- Ngày tạo -->
+              <td class="text-muted small">
+                {{ p.created_at.strftime('%d/%m/%Y') if p.created_at else '—' }}
+              </td>
+
+              <!-- Nút Sửa / Xóa -->
+              <td>
+                <div class="d-flex gap-1">
+                  <!-- Nút Sửa -->
+                  <a href="{{ url_for('update_product', product_id=p.id) }}"
+                     class="btn btn-sm btn-outline-warning" title="Sửa">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+
+                  <!-- Nút Xóa — form + JavaScript confirm() -->
+                  <form action="{{ url_for('delete_product', product_id=p.id) }}"
+                        method="POST"
+                        onsubmit="return confirm('⚠️ Bạn có chắc chắn muốn xóa sản phẩm\n\n\"{{ p.name }}\"\n\nHành động này không thể hoàn tác!')">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+
+          {% else %}
+            <!-- Chưa có sản phẩm -->
+            <tr>
+              <td colspan="8" class="table-empty">
+                <i class="bi bi-inbox fs-1 d-block mb-2 text-muted"></i>
+                Chưa có sản phẩm nào.
+                <a href="{{ url_for('create_product') }}">Thêm sản phẩm đầu tiên</a>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div><!-- /.table-responsive -->
+  </div><!-- /.admin-table-wrapper -->
+
+</div>
+{% endblock %}
